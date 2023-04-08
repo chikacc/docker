@@ -9,24 +9,27 @@ on:
       jobId:
         description: 'Job ID'
         required: true
-        default: 'dryRun'
+        default: 'editor-2023.2.0a9-1.0.1'
       editorVersion:
         description: 'Unity Editor Version'
         required: true
-        default: '2020.3.24f1'
+        default: '2023.2.0a9'
       changeSet:
         description: 'Unity Editor Changeset'
         required: true
-        default: '79c78de19888'
+        default: 'd3d5906d5d19'
       repoVersionFull:
         description: 'All digits of the latest tag of this repository, e.g. `1.23.45`'
         required: true
+        default: '1.0.1'
       repoVersionMinor:
         description: 'Minor digit of that tag, e.g. `23`'
         required: true
+        default: '1.0'
       repoVersionMajor:
         description: 'Major digit of that tag, e.g. `1`'
         required: true
+        default: '1'
 
 # Further reading:
 # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#repository_dispatch
@@ -86,19 +89,6 @@ jobs:
           echo "repoVersion (full): ${{ steps.buildParameters.outputs.repoVersionFull }}"
           echo "repoVersion (only minor and major): ${{ steps.buildParameters.outputs.repoVersionMinor }}"
           echo "repoVersion (only major): ${{ steps.buildParameters.outputs.repoVersionMajor }}"
-
-      - name: Report new build
-        uses: ./.github/workflows/actions/report-to-backend
-        with:
-          token: ${{ secrets.VERSIONING_TOKEN }}
-          jobId: ${{ steps.buildParameters.outputs.jobId }}
-          status: started
-          # Build info
-          imageType: editor
-          baseOs: windows
-          repoVersion: ${{ steps.buildParameters.outputs.repoVersionFull }}
-          editorVersion: ${{ steps.buildParameters.outputs.editorVersion }}
-          targetPlatform: ${{ matrix.targetPlatform }}
 
       #############
       #   Setup   #
@@ -205,45 +195,6 @@ jobs:
           $Digest = $ImageDetails.Config.Image
           echo "digest=$Digest" >> $GITHUB_OUTPUT
           echo "metadata=$MetaData" >> $GITHUB_OUTPUT
-
-      #################
-      #   reporting   #
-      #################
-      - name: Report publication
-        if: ${{ success() }}
-        uses: ./.github/workflows/actions/report-to-backend
-        with:
-          token: ${{ secrets.VERSIONING_TOKEN }}
-          jobId: ${{ steps.buildParameters.outputs.jobId }}
-          status: published
-          # Build info
-          imageType: editor
-          baseOs: windows
-          repoVersion: ${{ steps.buildParameters.outputs.repoVersionFull }}
-          editorVersion: ${{ steps.buildParameters.outputs.editorVersion }}
-          targetPlatform: ${{ matrix.targetPlatform }}
-          # Publication info
-          imageRepo: unityci
-          imageName: editor
-          friendlyTag: windows-${{ steps.buildParameters.outputs.repoVersionMinor }}
-          specificTag: windows-${{ steps.buildParameters.outputs.repoVersionFull }}
-          digest: ${{ steps.image-digest.outputs.digest }}
-
-      - name: Report failure
-        if: ${{ failure() || cancelled() }}
-        uses: ./.github/workflows/actions/report-to-backend
-        with:
-          token: ${{ secrets.VERSIONING_TOKEN }}
-          jobId: ${{ steps.buildParameters.outputs.jobId }}
-          status: failed
-          # Build info
-          imageType: editor
-          baseOs: windows
-          repoVersion: ${{ steps.buildParameters.outputs.repoVersionFull }}
-          editorVersion: ${{ steps.buildParameters.outputs.editorVersion }}
-          targetPlatform: ${{ matrix.targetPlatform }}
-          # Failure info
-          reason: ${{ job.status }} - ${{ steps.image-digest.outputs.metadata }}
 
       ###############
       #   Metrics   #
